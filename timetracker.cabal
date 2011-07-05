@@ -5,7 +5,7 @@ Author:          Marc Weber marco-oweber@gmx.de
 Category:
 Synopsis:        time tracking tool tracking time spend on tags (wmii)
 
-executable timetracker
+executable timetracker2
   Main-Is:        timetracker.hs
   hs-source-dirs: src-timetracker
   Build-Depends:  
@@ -19,4 +19,5 @@ executable timetracker
         old-locale,
         old-time,
         bytestring,
-        parsec >= 3.0
+        parsec >= 3.0,
+        unix

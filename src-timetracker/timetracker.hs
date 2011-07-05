@@ -1,5 +1,8 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 module Main where
+import System.Posix.IO (LockRequest(..))
+import System.Posix.IO (waitToSetLock)
+import System.Posix.IO (handleToFd)
 import Data.Char (isSpace)
 import Control.Exception
 import Control.Concurrent
@@ -85,7 +88,7 @@ parseLine s = runParser p () "line" s
         eof
         case mbTag of
           Just n -> return $ print =<< (liftM (M.lookup n) $ readMVar times)
-          Nothing -> return $ print =<< (liftM toList $ readMVar times)
+          Nothing -> return $ mapM_ print =<< (liftM toList $ readMVar times)
       
       resetCmd = do
         string "reset"
@@ -112,6 +115,14 @@ savePeriodically x = do
 -- main {{{
 main = do
   storage <- liftM (</> ".timetracker-data") getHomeDirectory
+  lock <- liftM (</> ".timetracker-data.lock") getHomeDirectory
+
+  -- aquire lock
+  putStrLn "aquiring lock"
+  lockfd<- handleToFd -- closes handle
+            =<< openFile lock WriteMode
+  waitToSetLock lockfd (WriteLock, AbsoluteSeek, 0, 0)
+
   handle (\(e :: SomeException) -> do
       save storage
     ) $ do
