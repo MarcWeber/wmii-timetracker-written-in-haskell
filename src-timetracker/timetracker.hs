@@ -12,7 +12,6 @@ import Text.Printf
 import System.Time
 import System.Locale
 
-import Control.Monad.LazyIO
 import WMII
 import Data.List hiding ( insert, delete )
 import Data.IORef
@@ -38,10 +37,12 @@ times = unsafePerformIO $ newMVar $ M.empty
 atTag :: MVar (String, start)
 atTag = unsafePerformIO $ newEmptyMVar
 
+logErr = hPutStrLn stderr
+
+-- tracking wmii events {{{
+
 addTimeCode :: WmiiEvent -> IO ( WmiiEvent, CalendarTime )
 addTimeCode event = fmap ( (,) event) (getClockTime >>= toCalendarTime)
-
-logErr = hPutStrLn stderr
 
 start tag time = putMVar atTag (tag, time)
 stop tag time = do
@@ -70,6 +71,7 @@ trackActions = do events <- wmiiActions
 usage fn = unlines [ "usage of " ++ fn
 		    , "" ]
 
+-- commandline {{{
 parseLine :: String -> (Either ParseError (IO ()))
 parseLine s = runParser p () "line" s 
   where
@@ -96,6 +98,7 @@ readCommandsFromStdin = do
   either print id $ parseLine l
   readCommandsFromStdin
 
+-- save {{{
 save storage = do
   print $ "writing to " ++ storage
   writeFile storage =<< fmap show (readMVar times)
@@ -106,6 +109,7 @@ savePeriodically x = do
   save x
   savePeriodically x
 
+-- main {{{
 main = do
   storage <- liftM (</> ".timetracker-data") getHomeDirectory
   handle (\(e :: SomeException) -> do
