@@ -23,7 +23,7 @@ import qualified Data.Map as M
 import GHC.Read
 import Control.Monad
 import System.IO.Unsafe
-import Control.Monad.Reader
+import qualified Control.Monad.Reader
 import Data.Time
 import Data.Maybe
 import System.IO
@@ -113,6 +113,9 @@ savePeriodically x = do
   savePeriodically x
 
 -- main {{{
+forever'     :: (Monad m) => m a -> m b
+forever' a   = a >> forever' a
+
 main = do
   storage <- liftM (</> ".timetracker-data") getHomeDirectory
   lock <- liftM (</> ".timetracker-data.lock") getHomeDirectory
@@ -131,6 +134,6 @@ main = do
       print $ "reading from: " ++ storage
       modifyMVar_ times $ \_ -> liftM (read . BS.unpack) $ BS.readFile storage -- only works with ASCII names!
       print =<< readMVar times
-    threadId <- forkIO trackActions
+    threadId <- forkIO (forever' trackActions)
     trheadId2 <- forkIO (savePeriodically storage)
     readCommandsFromStdin
