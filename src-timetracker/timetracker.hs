@@ -74,6 +74,12 @@ trackActions = do events <- wmiiActions
 usage fn = unlines [ "usage of " ++ fn
 		    , "" ]
 
+printValueOf :: (Maybe String) -> IO ()
+printValueOf mbTag = do
+        case mbTag of
+          Just n -> print =<< (liftM (M.lookup n) $ readMVar times)
+          Nothing -> mapM_ print =<< (liftM toList $ readMVar times)
+
 -- commandline {{{
 parseLine :: String -> (Either ParseError (IO ()))
 parseLine s = runParser p () "line" s 
@@ -86,15 +92,15 @@ parseLine s = runParser p () "line" s
         string "show"
         mbTag <- optionMaybe $ PC.try $ (many1 $ satisfy isSpace) >> tag
         eof
-        case mbTag of
-          Just n -> return $ print =<< (liftM (M.lookup n) $ readMVar times)
-          Nothing -> return $ mapM_ print =<< (liftM toList $ readMVar times)
+        return $ printValueOf mbTag
       
       resetCmd = do
         string "reset"
         many1 $ satisfy isSpace
         t <- tag
-        return $ modifyMVar_ times $ return . M.insert t 0
+        return $ do
+          printValueOf (Just t)
+          modifyMVar_ times $ return . M.insert t 0
 
 readCommandsFromStdin = do
   l <- getLine
