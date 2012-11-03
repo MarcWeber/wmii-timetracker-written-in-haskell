@@ -139,6 +139,9 @@ wmiir_write path value = do
   hPutStr in_ value
   hFlush in_
   mapM_ hClose [in_,out,err]
+  waitForProcess ph
+  return ()
+  
 
 view_path  = "/tag/sel/ctl/tags"
 view :: IO View
